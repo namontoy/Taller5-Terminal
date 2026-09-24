@@ -1,0 +1,5 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Installation help
+    url: https://github.com/namontoy/Taller5-Terminal/blob/main/INSTALL.md#troubleshooting
+    about: Most setup problems (ports, drivers, permissions) are covered in the troubleshooting table.

@@ -1,0 +1,16 @@
+name: Feature idea
+description: Suggest an improvement
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What would you like to do that is hard or impossible today?
+      placeholder: "e.g. When I test my UART driver, I need to ..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: idea
+    attributes:
+      label: How could the terminal help?

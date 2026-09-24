@@ -1,0 +1,62 @@
+name: Bug report
+description: Something doesn't work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting! The more of this you fill in, the faster it can be fixed.
+
+  - type: input
+    id: version
+    attributes:
+      label: App version
+      description: Click **About** in the top bar; it's under the title.
+      placeholder: "1.0.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Linux (Ubuntu / Mint / other)
+        - Windows
+        - macOS
+    validations:
+      required: true
+
+  - type: input
+    id: board
+    attributes:
+      label: Board or USB adapter
+      placeholder: "e.g. Nucleo-F411RE, Arduino Uno clone (CH340), ESP32 (CP2102)"
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Select port /dev/ttyUSB0 (or COM3), 115200 baud
+        2. Click Connect
+        3. ...
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect, and what happened instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: log
+    attributes:
+      label: Log file
+      description: |
+        Paste the last lines of the log (errors are recorded even when the window closes with no message):
+        - Linux / macOS: `~/.config/serial_terminal/logs/serial_terminal.log`
+        - Windows: `%USERPROFILE%\.config\serial_terminal\logs\serial_terminal.log`
+      render: text
