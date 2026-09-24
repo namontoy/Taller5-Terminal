@@ -1,0 +1,24 @@
+# Python bytecode
+__pycache__/
+*.pyc
+
+# Local virtual environment (see INSTALL.md, option A)
+.venv/
+
+# Local Claude Code permissions
+.claude/settings.local.json
+
+# Serial session captures (personal data logs)
+capture*.txt
+my_capture*.txt
+
+# Local notes / helpers
+session-continue.txt
+cmd_start.txt
+
+# Original design mockup (reference only)
+extracted/
+Taller5-Terminal-handoff.zip
+
+# Claude Code project notes (local only)
+CLAUDE.md
