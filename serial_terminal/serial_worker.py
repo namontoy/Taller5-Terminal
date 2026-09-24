@@ -76,8 +76,11 @@ class SerialWorker(QThread):
         xonxoff = self._flow == 'XON/XOFF'
 
         try:
-            ser = serial.Serial(
-                port=self._port,
+            # serial_for_url() opens plain port names (/dev/ttyUSB0, COM3)
+            # exactly like serial.Serial(), and also accepts pyserial URLs
+            # such as 'loop://' — used by tests/test_serial_worker.py.
+            ser = serial.serial_for_url(
+                self._port,
                 baudrate=self._baud,
                 bytesize=self._data_bits,
                 parity=self._parity,
