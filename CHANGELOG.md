@@ -4,7 +4,7 @@ All notable changes to this project are listed here. Versions follow
 [semantic versioning](https://semver.org/): `1.0.1` fixes bugs, `1.1.0` adds
 features, `2.0.0` changes something in a way that may break existing use.
 
-## [1.0.0] - unreleased
+## [1.0.0] - 2026-09-24
 
 First version for the course.
 
