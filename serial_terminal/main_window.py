@@ -19,7 +19,7 @@ from PyQt6.QtWidgets import (
     QDialog, QLabel,
 )
 
-from serial_terminal import Char
+from serial_terminal import Char, __version__
 from serial_terminal.config import load as cfg_load, save as cfg_save
 from serial_terminal.logging_setup import get_logger
 from serial_terminal.protocol import chars_to_text, encode_command, terminator_bytes
@@ -152,6 +152,10 @@ class _AboutDialog(QDialog):
         lbl_sub = QLabel('Real-time serial monitor with live chart')
         lbl_sub.setStyleSheet(f'color:{c["fg_dim"]};font-size:10px;margin-top:4px;')
         root.addWidget(lbl_sub)
+        lbl_ver = QLabel(f'Version {__version__}')
+        lbl_ver.setObjectName('about_version')
+        lbl_ver.setStyleSheet(f'color:{c["fg_faint"]};font-size:10px;margin-top:2px;')
+        root.addWidget(lbl_ver)
 
         root.addWidget(divider())
 

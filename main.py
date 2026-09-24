@@ -7,7 +7,7 @@ import sys
 from PyQt6.QtGui import QFont, QFontDatabase
 from PyQt6.QtWidgets import QApplication
 
-from serial_terminal import logging_setup
+from serial_terminal import __version__, logging_setup
 from serial_terminal.main_window import MainWindow
 
 
@@ -16,7 +16,7 @@ def main() -> None:
     log = logging_setup.setup()
     logging_setup.install_excepthooks()
     logging_setup.install_qt_message_handler()
-    log.info('Serial Terminal starting up')
+    log.info('Serial Terminal %s starting up', __version__)
 
     app = QApplication(sys.argv)
     app.setApplicationName('Serial Terminal')

@@ -43,8 +43,20 @@ jobs:
       - name: Install dependencies
         run: python -m pip install -r requirements.txt
 
-      - name: Port detection tests
+      - name: Unit tests
         run: python -m unittest discover tests -v
 
       - name: Start-up smoke test
         run: python tests/smoke_test.py
+
+      - name: Release tag matches the app version
+        # Only for tags like v1.2.3: the tag must equal serial_terminal.__version__
+        if: startsWith(github.ref, 'refs/tags/v')
+        shell: bash
+        run: |
+          version=$(python -c "import serial_terminal; print(serial_terminal.__version__)")
+          if [ "${GITHUB_REF_NAME}" != "v${version}" ]; then
+            echo "::error::Tag ${GITHUB_REF_NAME} does not match __version__ ${version}"
+            exit 1
+          fi
+          echo "Tag ${GITHUB_REF_NAME} matches version ${version}"
