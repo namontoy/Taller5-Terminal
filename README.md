@@ -54,6 +54,7 @@ This terminal is built around a few ideas:
 | **Capture to file** | Save the buffer as text, or save automatically to a timestamped file every time the app closes. |
 | **Three themes** | *The Matrix* (green on black), *Light* and *Matte*. |
 | **Remembers everything** | Port, speed, theme, saved commands and options are restored on the next launch. |
+| **Automated tests** | Port-detection unit tests for Linux, Windows and macOS, plus a start-up smoke test (opens the window, runs demo data, checks local echo, the "no port" message and every theme). GitHub Actions runs them on all three systems after every push. Run them locally with `python -m unittest discover tests` and `python tests/smoke_test.py`. |
 
 ![Live chart of three signals in demo mode](docs/screenshot-chart.png)
 
