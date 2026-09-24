@@ -22,10 +22,11 @@ from PyQt6.QtWidgets import (
 from serial_terminal import Char
 from serial_terminal.config import load as cfg_load, save as cfg_save
 from serial_terminal.logging_setup import get_logger
+from serial_terminal.protocol import chars_to_text, encode_command, terminator_bytes
 from serial_terminal.serial_worker import SerialWorker
 
 _log = get_logger('main')
-from serial_terminal.themes import THEMES, build_qss, BUILT_IN_TERMS
+from serial_terminal.themes import THEMES, build_qss
 
 from serial_terminal.widgets.toolbar     import ToolbarWidget
 from serial_terminal.widgets.status_bar  import StatusBarWidget
@@ -558,39 +559,11 @@ class MainWindow(QMainWindow):
 
     # ── Sending ────────────────────────────────────────────────────────────
 
-    def _term_bytes(self) -> list[int]:
-        result: list[int] = []
-        for key in self._active_terms:
-            t = next((t for t in BUILT_IN_TERMS if t['key'] == key), None)
-            if t:
-                result.extend(t['bytes'])
-            else:
-                # custom term — guard against malformed user input (e.g. '0xZZ')
-                key = key.strip()
-                if key.lower().startswith('0x'):
-                    try:
-                        v = int(key, 16)
-                    except ValueError:
-                        _log.warning('Ignoring invalid hex terminator %r', key)
-                        continue
-                    if 0 <= v <= 255:
-                        result.append(v)
-                elif len(key) == 1:
-                    result.append(ord(key))
-        return result
-
     @pyqtSlot(str, str)
     def _on_send_command(self, text: str, mode: str) -> None:
-        if mode == 'HEX':
-            try:
-                byte_vals = [int(h, 16) for h in text.split()
-                             if h and 0 <= int(h, 16) <= 255]
-            except ValueError:
-                return
-            out_bytes = bytes(byte_vals + self._term_bytes())
-        else:
-            out_bytes = text.encode('latin-1', errors='replace') + \
-                        bytes(self._term_bytes())
+        out_bytes = encode_command(text, mode, terminator_bytes(self._active_terms))
+        if out_bytes is None:
+            return   # invalid HEX token — send nothing
 
         if self._worker:
             self._worker.send(out_bytes)
@@ -648,17 +621,7 @@ class MainWindow(QMainWindow):
         if not self._chars:
             return
         fname = filename.strip() or 'capture.txt'
-        lines: list[str] = []
-        cur = ''
-        for ch in self._chars[-self._buf_size:]:
-            if ch.code == 10:
-                lines.append(cur)
-                cur = ''
-            elif ch.code != 13:
-                cur += chr(ch.code)
-        if cur:
-            lines.append(cur)
-        text = '\n'.join(lines)
+        text = chars_to_text(self._chars[-self._buf_size:])
         try:
             with open(fname, 'w', encoding='utf-8') as fh:
                 fh.write(text)

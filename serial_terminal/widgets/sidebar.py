@@ -12,6 +12,7 @@ from PyQt6.QtWidgets import (
 )
 
 from serial_terminal.config import PRESET_COUNT
+from serial_terminal.protocol import format_hex_input
 from serial_terminal.themes import BUILT_IN_TERMS, THEME_DISPLAY
 
 
@@ -479,9 +480,7 @@ class Sidebar(QWidget):
     def _on_hex_reformat(self, text: str) -> None:
         if self._cmd_mode != 'HEX':
             return
-        raw = ''.join(ch for ch in text.upper() if ch in '0123456789ABCDEF')
-        pairs = [raw[i:i+2] for i in range(0, len(raw), 2)]
-        formatted = ' '.join(pairs)
+        formatted = format_hex_input(text)
         if formatted != text:
             self._cmd_input.blockSignals(True)
             self._cmd_input.setText(formatted)
@@ -490,9 +489,7 @@ class Sidebar(QWidget):
     def _on_hex_preset_changed(self, inp: QLineEdit, btn: QPushButton) -> None:
         """Reformat hex input, update button state, and persist."""
         text = inp.text()
-        raw = ''.join(ch for ch in text.upper() if ch in '0123456789ABCDEF')
-        pairs = [raw[i:i+2] for i in range(0, len(raw), 2)]
-        formatted = ' '.join(pairs)
+        formatted = format_hex_input(text)
         if formatted != text:
             inp.blockSignals(True)
             inp.setText(formatted)
