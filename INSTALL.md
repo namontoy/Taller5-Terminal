@@ -1,7 +1,8 @@
 # Serial Terminal — Installation Guide
 
-Tested target: **Ubuntu 24.04 LTS** (also works on Linux Mint 21.x / Ubuntu 22.04,
-macOS and Windows). Everything not listed here is contained in the project folder.
+Tested target: **Ubuntu 24.04 LTS** (also works on Linux Mint 21.x / Ubuntu 22.04).
+**Windows** and **macOS** are supported and community-tested; see
+[Windows](#windows) and [macOS](#macos). Everything not listed here is contained in the project folder.
 
 ---
 
@@ -182,17 +183,56 @@ any remaining problem is serial-port related (steps 2 and 3).
 
 ---
 
-## macOS / Windows
+## Windows
+
+Supported and community-tested: the app is started automatically on Windows
+after every change (see the *smoke test* badge in the README), but it is
+developed on Linux.
+
+1. Install [Miniconda](https://docs.conda.io/en/latest/miniconda.html) and open
+   the **Anaconda Prompt** from the Start menu.
+2. Install and run:
+   ```bat
+   cd path\to\Taller5-Terminal
+   conda create -n taller5 python=3.12 -y
+   conda activate taller5
+   pip install -r requirements.txt
+   python main.py
+   ```
+3. Ports appear in **PORT** as `COM3`, `COM4`, … No permission setup is needed.
+
+**USB driver.** If the board doesn't appear, open **Device Manager**. A device
+under *Other devices* with a yellow warning sign means the driver is missing:
+
+| Adapter / board | Driver |
+|---|---|
+| CH340 / CH341 (cheap Arduino clones) | WCH CH341SER driver |
+| CP210x (many ESP32 boards) | Silicon Labs CP210x VCP driver |
+| FTDI | FTDI VCP driver (usually installed automatically by Windows Update) |
+| STM32 Nucleo (ST-LINK) | ST-LINK driver, installed together with STM32CubeIDE |
+
+**"Access is denied" when connecting.** On Windows only one program at a time
+can open a COM port. Close the other one: Arduino IDE (Serial Monitor),
+STM32CubeIDE's terminal, PuTTY, a second copy of this app…
+
+## macOS
+
+Supported and community-tested, like Windows.
 
 ```bash
 conda create -n taller5 python=3.12 -y
-conda run -n taller5 pip install -r requirements.txt
 conda activate taller5
+pip install -r requirements.txt
 python main.py
 ```
 
-No extra system packages are needed. On Windows the USB-serial adapter usually
-needs a vendor driver (CH340 / CP210x / FTDI) before the port appears.
+- Ports appear as `/dev/cu.usbserial-…` or `/dev/cu.usbmodem…`. Long names are
+  cut off in the box; hover over it, or open the list, to see the whole name.
+- Built-in entries such as `Bluetooth-Incoming-Port` are hidden on purpose.
+- Recent macOS versions include drivers for most adapters. If a board doesn't
+  appear, install the vendor driver (CH340, CP210x) and allow it in
+  *System Settings → Privacy & Security*.
+- `Resource busy` when connecting means another program has the port open.
 
 ---
 
@@ -229,7 +269,10 @@ cases where the window closes without printing anything to the terminal.
 | `Could not load the Qt platform plugin "xcb"` | Missing system libraries | [Step 1](#1-system-packages-linux-only). Re-run with `QT_DEBUG_PLUGINS=1` to see exactly which `.so` is missing. |
 | Port is listed, but **Connect** fails with `Permission denied` | Not in `dialout` group | [Step 2](#2-serial-port-permissions-linux-required) — and remember to log out/in |
 | `/dev/ttyUSB0` appears then vanishes | `brltty` claimed the adapter | [Step 3](#3-free-the-usb-adapter-from-brltty-linux) |
-| PORT dropdown is empty | Adapter not enumerated, or non-matching name | `ls -l /dev/tty{USB,ACM}*` and `sudo dmesg \| tail`. The app only lists `ttyUSB*`, `ttyACM*`, `ttyAMA*`, `ttyXRUSB*` and `rfcomm*` (`serial_terminal/widgets/toolbar.py`). |
+| PORT dropdown is empty (Linux) | Adapter not enumerated, or non-matching name | `ls -l /dev/tty{USB,ACM}*` and `sudo dmesg \| tail`. The app only lists `ttyUSB*`, `ttyACM*`, `ttyAMA*`, `ttyXRUSB*` and `rfcomm*` (`serial_terminal/widgets/toolbar.py`). |
+| PORT shows *(none detected)* (Windows / macOS) | USB driver missing | [Windows](#windows): check Device Manager. [macOS](#macos): install and allow the vendor driver. Then click **↺**. |
+| **Connect** says *No serial port detected* | Nothing is plugged in, or the driver is missing | Plug in the board, click **↺**; see the rows above. |
+| `Access is denied` (Windows) or `Resource busy` (macOS) | Another program has the port open | Close Arduino IDE, STM32CubeIDE's terminal, PuTTY, etc. |
 | Port listed but `Device or resource busy` | Another program holds it (ModemManager, a second terminal, Arduino IDE) | `sudo fuser -v /dev/ttyUSB0` to find it. Persistent ModemManager grabs: `sudo systemctl disable --now ModemManager`. |
 | App exits with no message at all | `conda run` swallowed the traceback | Re-run with `conda run --no-capture-output`, or read the log file above |
 | Chart tab shows "matplotlib is not installed" | Deps installed into a different environment | Re-run the install step, confirm with `python -c "import matplotlib"` inside the same env |

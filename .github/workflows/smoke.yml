@@ -1,0 +1,50 @@
+# Starts the app on Linux, Windows and macOS after every push.
+# No serial hardware is available on the runners: this checks that the app
+# installs, starts, lists ports correctly for each OS and runs in demo mode.
+name: smoke
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  smoke:
+    name: ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false        # always report all three systems
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+    env:
+      QT_QPA_PLATFORM: offscreen
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: requirements.txt
+
+      - name: Qt system libraries (Linux)
+        if: runner.os == 'Linux'
+        # Same list as INSTALL.md step 1, so the docs are checked too
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libxcb-cursor0 libxcb-icccm4 libxcb-image0 libxcb-keysyms1 \
+            libxcb-randr0 libxcb-render-util0 libxcb-shape0 libxcb-sync1 \
+            libxcb-util1 libxcb-xfixes0 libxcb-xkb1 \
+            libxkbcommon-x11-0 libegl1 libgl1
+
+      - name: Install dependencies
+        run: python -m pip install -r requirements.txt
+
+      - name: Port detection tests
+        run: python -m unittest discover tests -v
+
+      - name: Start-up smoke test
+        run: python tests/smoke_test.py

@@ -432,6 +432,18 @@ class MainWindow(QMainWindow):
             self._connect()
 
     def _connect(self) -> None:
+        if self._toolbar.current_port() is None:
+            # Otherwise we'd try the stale saved port and show a cryptic
+            # pyserial error — the common case of a missing USB driver.
+            _log.warning('Connect clicked with no serial port detected')
+            QMessageBox.warning(
+                self, 'No serial port',
+                'No serial port detected.\n\n'
+                'Plug in the board and click ↺ next to PORT.\n'
+                'If it still does not appear, the USB driver may be missing '
+                '(see INSTALL.md → Troubleshooting).')
+            return
+
         if self._demo_active:
             self._stop_demo()
 

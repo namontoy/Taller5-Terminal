@@ -7,7 +7,8 @@ writing any extra tools.**
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 ![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)
 ![PyQt6](https://img.shields.io/badge/GUI-PyQt6-41cd52.svg)
-![Platform](https://img.shields.io/badge/platform-Linux-lightgrey.svg)
+![Platforms](https://img.shields.io/badge/platform-Linux%20%7C%20Windows%20%7C%20macOS-lightgrey.svg)
+[![smoke test](https://github.com/namontoy/Taller5-Terminal/actions/workflows/smoke.yml/badge.svg)](https://github.com/namontoy/Taller5-Terminal/actions/workflows/smoke.yml)
 
 ![Terminal view with hex dump, ASCII strip and saved commands](docs/screenshot-terminal.png)
 
@@ -43,7 +44,7 @@ This terminal is built around a few ideas:
 
 | | |
 |---|---|
-| **Serial connection** | Any baud rate from 300 to 921 600, 5–8 data bits, parity, 1/1.5/2 stop bits, RTS/CTS or XON/XOFF flow control. Automatically detects USB-serial adapters and boards (`ttyUSB*`, `ttyACM*`, …). Currently Linux only; see [Platform support](#platform-support). |
+| **Serial connection** | Any baud rate from 300 to 921 600, 5–8 data bits, parity, 1/1.5/2 stop bits, RTS/CTS or XON/XOFF flow control. Automatically detects USB-serial adapters and boards (`/dev/ttyUSB0`, `COM3`, `/dev/cu.usbserial-…`). |
 | **Terminal** | Received text with visible line endings (`↵`) and named control characters; sent commands in amber; auto-scroll you can pause to read. |
 | **Hex dump** | Collapsible panel with offset, hex bytes and ASCII columns, color-coded RX / TX / control bytes. Copy only the hex values with a selection or right-click → *Copy all bytes as hex*. |
 | **ASCII strip** | The most recent characters, each shown as character, decimal and hex. Useful for learning the ASCII table. |
@@ -62,9 +63,14 @@ This terminal is built around a few ideas:
 
 ### Platform support
 
-The terminal is developed and tested on **Linux** (Ubuntu, Linux Mint). The
-interface also starts on Windows and macOS, but the port list currently only
-recognizes Linux device names, so no port can be selected there yet.
+| System | Status |
+|---|---|
+| **Linux** (Ubuntu, Linux Mint) | Developed and tested with real hardware. |
+| **Windows**, **macOS** | Supported, community-tested. Every push is checked automatically on both (the *smoke test* badge above): the app installs, starts, lists ports the way each system names them and runs in demo mode. Real-hardware reports from users are welcome. |
+
+Windows or macOS problems are almost always about the USB driver or another
+program holding the port. See the Windows and macOS notes in
+[INSTALL.md](INSTALL.md#windows).
 
 ### Quick install
 
@@ -81,6 +87,8 @@ pip install -r requirements.txt
 
 python main.py
 ```
+
+On **Windows**, run these commands in the *Anaconda Prompt*.
 
 > **Linux users:** two one-time steps are required before the terminal can open
 > a port: install the Qt system libraries, and add yourself to the `dialout`
@@ -202,7 +210,7 @@ print(f"T:{temperature:.1f} V:{voltage:.2f}")
 
 | Control | What it does |
 |---|---|
-| **PORT** / **↺** | Detected serial ports (`ttyUSB*`, `ttyACM*`, `ttyAMA*`, `ttyXRUSB*`, `rfcomm*`). ↺ rescans. |
+| **PORT** / **↺** | Detected serial ports. Linux: `ttyUSB*`, `ttyACM*`, `ttyAMA*`, `ttyXRUSB*`, `rfcomm*`. Windows: `COM1`, `COM3`… macOS: `/dev/cu.*` (hover to see a long name in full). ↺ rescans. |
 | **BAUD, DATA, PARITY, STOP, FLOW** | Frame settings. Locked while connected. |
 | **ECHO** | Show sent commands in the terminal, hex dump, ASCII strip and saved files. Can be changed at any time. |
 | **Demo** | Simulated sensor stream (`T`, `V`, `H` sine waves with noise). Not available while connected. |
@@ -261,8 +269,8 @@ hex** copies the whole buffer as `48 65 6C 6C 6F …`.
 
 | What | Location |
 |---|---|
-| Settings (port, theme, saved commands…) | `~/.config/serial_terminal/config.json`. Delete it to reset everything. |
-| Application log | `~/.config/serial_terminal/logs/serial_terminal.log`. **Check it first if something goes wrong.** |
+| Settings (port, theme, saved commands…) | `~/.config/serial_terminal/config.json` (Windows: `%USERPROFILE%\.config\serial_terminal\config.json`). Delete it to reset everything. |
+| Application log | `~/.config/serial_terminal/logs/serial_terminal.log` (Windows: under `%USERPROFILE%\.config\…` too). **Check it first if something goes wrong.** |
 | Captures | The folder you started the app from. |
 
 ---
@@ -287,6 +295,8 @@ Taller5-Terminal/
 ├── requirements.txt           PyQt6, pyserial, matplotlib
 ├── INSTALL.md                 Installation guide and troubleshooting
 ├── docs/                      Screenshots
+├── tests/                     Port-detection unit tests + start-up smoke test
+├── .github/workflows/         Automatic checks on Linux, Windows and macOS
 └── serial_terminal/
     ├── main_window.py         Main window, wiring between widgets, demo mode
     ├── serial_worker.py       Serial port thread

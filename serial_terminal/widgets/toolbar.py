@@ -3,6 +3,7 @@ Top toolbar: port, baud, data bits, parity, stop bits, flow, local echo,
 connect button.
 """
 import re
+import sys
 
 from PyQt6.QtCore import pyqtSignal, QTimer, Qt
 from PyQt6.QtGui import QColor, QPainter, QBrush
@@ -19,19 +20,46 @@ try:
 except ImportError:
     _SERIAL_TOOLS_OK = False
 
-# Whitelist: only USB serial and ACM adapters (Arduino, FTDI, CH340, CP210x, etc.)
-_PORT_RE = re.compile(
+# Linux whitelist: only USB serial and ACM adapters (Arduino, FTDI, CH340,
+# CP210x, etc.). Hides legacy /dev/ttyS* ports, which pyserial still lists.
+_LINUX_PORT_RE = re.compile(
     r'^/dev/(ttyUSB|ttyACM|ttyAMA|ttyXRUSB|rfcomm)\d+$'
 )
 
+# macOS built-in pseudo ports. Hidden by name (not by "has a USB VID") so
+# paired Bluetooth serial modules such as an HC-05 remain selectable.
+_MACOS_HIDDEN = ('Bluetooth-Incoming-Port', 'debug-console', 'wlan-debug')
+
+_NO_PORT = '(none detected)'
+
+
+def _is_user_port(device: str, platform: str | None = None) -> bool:
+    """True if *device* is a port a user would want to pick on *platform*
+    (default: the running system)."""
+    platform = platform or sys.platform
+    if platform.startswith('linux'):
+        return bool(_LINUX_PORT_RE.match(device))
+    if platform == 'darwin':
+        # pyserial reports only the callout devices (/dev/cu.*) on macOS
+        return (device.startswith('/dev/cu.')
+                and not any(h in device for h in _MACOS_HIDDEN))
+    # Windows (COMn) and other systems: pyserial lists only ports that exist
+    return True
+
+
+def _natural_key(device: str) -> list:
+    """Sort key so COM2 < COM10 and ttyUSB2 < ttyUSB10."""
+    return [int(t) if t.isdigit() else t.lower()
+            for t in re.split(r'(\d+)', device)]
+
 
 def _scan_serial_ports() -> list[str]:
-    """Return sorted list of serial port device paths that match the whitelist."""
+    """Return the selectable serial ports on this system, naturally sorted."""
     if not _SERIAL_TOOLS_OK:
         return []
     return sorted(
-        p.device for p in _list_ports.comports()
-        if _PORT_RE.match(p.device)
+        (p.device for p in _list_ports.comports() if _is_user_port(p.device)),
+        key=_natural_key,
     )
 
 
@@ -292,16 +320,32 @@ class ToolbarWidget(QWidget):
             idx = self._port.findText(self._saved_port)
             self._port.setCurrentIndex(idx if idx >= 0 else 0)
         else:
-            self._port.addItem('(none detected)')
+            self._port.addItem(_NO_PORT)
         self._port.blockSignals(False)
+
+        # Long names (e.g. macOS /dev/cu.usbserial-A50285BI) overflow the
+        # fixed-width combo: widen only the drop-down list, not the toolbar.
+        # Measure with the combo's own font: the view's size hint ignores the
+        # stylesheet font and underestimates.
+        fm = self._port.fontMetrics()
+        longest = max((fm.horizontalAdvance(p) for p in ports), default=0)
+        self._port.view().setMinimumWidth(max(self._port.width(), longest + 32))
+
         selected = self._port.currentText()
-        if selected and selected != '(none detected)':
+        self._port.setToolTip(selected if ports else 'No serial port detected')
+        if ports:
             self.port_changed.emit(selected)
 
     def _on_port_selected(self, text: str) -> None:
-        if text and text != '(none detected)':
+        if text and text != _NO_PORT:
             self._saved_port = text
+            self._port.setToolTip(text)
             self.port_changed.emit(text)
+
+    def current_port(self) -> str | None:
+        """The selected port, or None when no port was detected."""
+        text = self._port.currentText()
+        return text if text and text != _NO_PORT else None
 
     def apply_theme(self, c: dict[str, str]) -> None:
         self._colors = c
