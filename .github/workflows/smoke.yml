@@ -1,12 +1,17 @@
-# Starts the app on Linux, Windows and macOS after every push.
-# No serial hardware is available on the runners: this checks that the app
-# installs, starts, lists ports correctly for each OS and runs in demo mode.
+# Starts the app on Linux, Windows and macOS for every change to main, every
+# release tag and every pull request. No serial hardware is available on the
+# runners: this checks that the app installs, starts, lists ports correctly for
+# each OS and runs in demo mode.
 name: smoke
 
 on:
   push:
+    # Other branches are covered by their pull request; limiting push runs
+    # avoids running everything twice for a branch that has an open PR.
+    branches: [main]
+    tags: ['v*']
   pull_request:
-  workflow_dispatch:
+  workflow_dispatch:   # "Run workflow" button, for any branch
 
 jobs:
   smoke:
