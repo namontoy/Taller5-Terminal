@@ -37,7 +37,9 @@ class SerialWorker(QThread):
         self._stop_bits = self._map_stopbits(stop_bits)
         self._flow      = flow
         self._send_queue: queue.Queue[bytes] = queue.Queue()
-        self._running   = False
+        # Set by stop() and never cleared: a stop requested while run() is
+        # still opening the port must not be lost.
+        self._stop_requested = False
 
     # ── pyserial enum mapping ──────────────────────────────────────────────
     @staticmethod
@@ -65,7 +67,7 @@ class SerialWorker(QThread):
 
     def stop(self) -> None:
         """Signal the thread to stop and wait for it to finish."""
-        self._running = False
+        self._stop_requested = True
         if not self.wait(3000):
             _log.warning('Serial thread for %s did not stop within 3 s',
                          self._port)
@@ -98,11 +100,11 @@ class SerialWorker(QThread):
 
         _log.info('Opened %s @ %d baud (%d%s%s)', self._port, self._baud,
                   self._data_bits, self._parity, self._stop_bits)
-        self._running = True
-        self.connected.emit()
+        if not self._stop_requested:     # Disconnect may arrive mid-open
+            self.connected.emit()
 
         try:
-            while self._running:
+            while not self._stop_requested:
                 try:
                     # Read incoming bytes
                     waiting = ser.in_waiting

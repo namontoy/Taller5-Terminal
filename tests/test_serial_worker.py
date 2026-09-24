@@ -87,6 +87,23 @@ class LoopbackTest(WorkerTestCase):
                             self.assertTrue(opened)
 
 
+class StopWhileOpeningTest(WorkerTestCase):
+    """Disconnect (or closing the app) while the port is still opening must
+    still end the thread; otherwise the port stays open until restart."""
+
+    def test_stop_right_after_start(self):
+        for attempt in range(20):
+            w = make_worker()
+            w.start()
+            w.stop()             # before run() has finished opening the port
+            with self.subTest(attempt=attempt):
+                self.assertTrue(w.isFinished(),
+                                'serial thread still running after stop()')
+            if not w.isFinished():   # release it so the suite can go on
+                w._stop_requested = True
+                w.wait(1000)
+
+
 class FailureTest(WorkerTestCase):
 
     def test_missing_port_reports_error_and_never_connects(self):
