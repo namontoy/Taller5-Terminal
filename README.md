@@ -54,7 +54,7 @@ This terminal is built around a few ideas:
 | **Capture to file** | Save the buffer as text, or save automatically to a timestamped file every time the app closes. |
 | **Three themes** | *The Matrix* (green on black), *Light* and *Matte*. |
 | **Remembers everything** | Port, speed, theme, saved commands and options are restored on the next launch. |
-| **Automated tests** | Port-detection unit tests for Linux, Windows and macOS, plus a start-up smoke test (opens the window, runs demo data, checks local echo, the "no port" message and every theme). GitHub Actions runs them on all three systems after every push. Run them locally with `python -m unittest discover tests` and `python tests/smoke_test.py`. |
+| **Automated tests** | About 70 tests, run by GitHub Actions on Linux, Windows and macOS after every push: what goes on the wire (HEX input, line endings, encoding), the chart formats in this README, settings files, port detection per OS, and the serial thread itself through pyserial's `loop://` virtual port (no hardware needed). A start-up smoke test opens the window in every theme and state and **fails if Qt ignores a stylesheet**. Run them locally with `python -m unittest discover tests` and `python tests/smoke_test.py`. |
 
 ![Live chart of three signals in demo mode](docs/screenshot-chart.png)
 
@@ -296,7 +296,7 @@ Taller5-Terminal/
 ├── requirements.txt           PyQt6, pyserial, matplotlib
 ├── INSTALL.md                 Installation guide and troubleshooting
 ├── docs/                      Screenshots
-├── tests/                     Port-detection unit tests + start-up smoke test
+├── tests/                     Unit tests + start-up smoke test (see Automated tests)
 ├── .github/workflows/         Automatic checks on Linux, Windows and macOS
 └── serial_terminal/
     ├── main_window.py         Main window, wiring between widgets, demo mode
