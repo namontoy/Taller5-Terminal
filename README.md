@@ -101,6 +101,18 @@ On **Windows**, run these commands in the *Anaconda Prompt*.
 an option without conda (venv), the fix for USB adapters that disappear
 (`brltty`), and a troubleshooting table.
 
+### Versions
+
+Each version used in the course is tagged and listed on the
+[Releases](https://github.com/namontoy/Taller5-Terminal/releases) page, and
+what changed is in [CHANGELOG.md](CHANGELOG.md). To install a specific version:
+
+```bash
+git clone --branch v1.0.0 https://github.com/namontoy/Taller5-Terminal.git
+```
+
+The version you are running is shown in **About**.
+
 ---
 
 ## Getting started
@@ -295,7 +307,9 @@ Taller5-Terminal/
 ├── main.py                    Entry point
 ├── requirements.txt           PyQt6, pyserial, matplotlib
 ├── INSTALL.md                 Installation guide and troubleshooting
-├── docs/                      Screenshots
+├── CONTRIBUTING.md            How to report bugs and propose changes
+├── CHANGELOG.md               What changed in each version
+├── docs/                      Screenshots, hardware checklist for releases
 ├── tests/                     Unit tests + start-up smoke test (see Automated tests)
 ├── .github/workflows/         Automatic checks on Linux, Windows and macOS
 └── serial_terminal/
@@ -314,6 +328,16 @@ Taller5-Terminal/
         ├── sidebar.py         Commands, line endings, saved commands, keypad, theme
         └── bottom_bar.py      Clear, scroll, buffer, save
 ```
+
+---
+
+## Contributing
+
+Found a bug or have an idea? Open an
+[issue](https://github.com/namontoy/Taller5-Terminal/issues/new/choose).
+Want to fix or add something yourself? [CONTRIBUTING.md](CONTRIBUTING.md)
+explains how, including the one rule that matters most: **a bug fix comes
+with a test that fails without it.**
 
 ---
 
