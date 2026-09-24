@@ -36,7 +36,7 @@ jobs:
 
       - name: Qt system libraries (Linux)
         if: runner.os == 'Linux'
-        # Same list as INSTALL.md step 1, so the docs are checked too
+        # Same list as INSTALL.md step 2, so the docs are checked too
         run: |
           sudo apt-get update
           sudo apt-get install -y \

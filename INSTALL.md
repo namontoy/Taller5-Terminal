@@ -10,12 +10,13 @@ Tested target: **Ubuntu 24.04 LTS** (also works on Linux Mint 21.x / Ubuntu 22.0
 
 | Requirement | Notes |
 |---|---|
-| **Python 3.12** | Ubuntu 24.04 ships this by default; conda can also provide it |
+| **Conda (Miniconda)** | Creates the isolated Python environment — see [step 1](#1-install-miniconda-conda) |
+| **Python 3.12** | Installed by conda inside the environment (Ubuntu 24.04 also ships it, for the venv alternative) |
 | **PyQt6 >= 6.6** | GUI framework — installed with pip inside the environment |
 | **pyserial >= 3.5** | Serial port communication — installed with pip |
 | **matplotlib >= 3.8** | Real-time chart panel — installed with pip |
-| **Qt XCB system libraries** | Linux only — see [step 1](#1-system-packages-linux-only) |
-| **`dialout` group membership** | Linux only, **required to open serial ports** — see [step 2](#2-serial-port-permissions-linux-required) |
+| **Qt XCB system libraries** | Linux only — see [step 2](#2-system-packages-linux-only) |
+| **`dialout` group membership** | Linux only, **required to open serial ports** — see [step 3](#3-serial-port-permissions-linux-required) |
 
 ---
 
@@ -27,29 +28,79 @@ these fail silently and only show up much later as a confusing symptom.
 
 | ☐ | Step | Verify with | Expected |
 |---|---|---|---|
-| ☐ | 1 — Qt XCB system libraries installed | `dpkg -s libxcb-cursor0 \| grep Status` | `Status: install ok installed` |
-| ☐ | 2 — User added to `dialout` | `sudo usermod -aG dialout $USER` | *(no output)* |
-| ☐ | 2 — **Logged out and back in** after that | `groups` | output contains `dialout` |
-| ☐ | 3 — `brltty` not stealing the adapter | `dmesg \| tail -20` after plugging in | no `brltty` lines |
-| ☐ | 3 — Adapter present and stable | `ls -l /dev/ttyUSB* /dev/ttyACM*` | a device, still there 10 s later |
-| ☐ | 3 — Device is readable by you | `test -r /dev/ttyUSB0 && echo OK` | `OK` |
-| ☐ | 4 — Environment created | `.venv/bin/python -V` (or `conda run -n taller5 python -V`) | `Python 3.12.x` |
-| ☐ | 4 — Dependencies installed | `.venv/bin/python -c "import PyQt6, serial, matplotlib; print('OK')"` | `OK` |
-| ☐ | 5 — GUI opens | `.venv/bin/python main.py` | window appears, no `xcb` error |
-| ☐ | 6 — GUI works without hardware | click **Demo** in the toolbar | text scrolls, chart moves |
-| ☐ | 6 — Serial works | select the port, click **Connect** | status bar shows `CONNECTED` |
+| ☐ | 1 — Miniconda installed (**new terminal** opened afterwards) | `conda --version` | `conda 26.x` (any version) |
+| ☐ | 1 — Terms of Service accepted | `conda tos` | a date in the **Accepted** column for both channels |
+| ☐ | 2 — Qt XCB system libraries installed | `dpkg -s libxcb-cursor0 \| grep Status` | `Status: install ok installed` |
+| ☐ | 3 — User added to `dialout` | `sudo usermod -aG dialout $USER` | *(no output)* |
+| ☐ | 3 — **Logged out and back in** after that | `groups` | output contains `dialout` |
+| ☐ | 4 — `brltty` not stealing the adapter | `dmesg \| tail -20` after plugging in | no `brltty` lines |
+| ☐ | 4 — Adapter present and stable | `ls -l /dev/ttyUSB* /dev/ttyACM*` | a device, still there 10 s later |
+| ☐ | 4 — Device is readable by you | `test -r /dev/ttyUSB0 && echo OK` | `OK` |
+| ☐ | 5 — Environment created | `conda run -n taller5 python -V` | `Python 3.12.x` |
+| ☐ | 5 — Dependencies installed | `conda run -n taller5 python -c "import PyQt6, serial, matplotlib; print('OK')"` | `OK` |
+| ☐ | 6 — GUI opens | `conda run --no-capture-output -n taller5 python main.py` | window appears, no `xcb` error |
+| ☐ | 7 — GUI works without hardware | click **Demo** in the toolbar | text scrolls, chart moves |
+| ☐ | 7 — Serial works | select the port, click **Connect** | status bar shows `CONNECTED` |
 
 If any row fails, jump to the matching section below, or to
 [Troubleshooting](#troubleshooting).
 
-> Substitute your real device path for `/dev/ttyUSB0`, and use the conda
-> equivalents from [step 4](#4-python-environment) if you chose Option B.
+> Substitute your real device path for `/dev/ttyUSB0`. If you chose the venv
+> alternative in [step 5](#5-python-environment), skip the step 1 rows and use
+> `.venv/bin/python` instead of `conda run -n taller5 python`.
 
 ---
 
 ## Linux (Ubuntu 24.04) — full setup
 
-### 1. System packages (Linux only)
+### 1. Install Miniconda (conda)
+
+Conda creates an isolated Python environment for the app, so nothing is
+installed into the system Python. Check first whether you already have it:
+
+```bash
+conda --version
+```
+
+If that prints a version, skip to [step 2](#2-system-packages-linux-only).
+Otherwise, download and install Miniconda into your home folder:
+
+```bash
+mkdir -p ~/miniconda3
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda3/miniconda.sh
+bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3
+rm ~/miniconda3/miniconda.sh
+```
+
+Then make the `conda` command available in every new terminal:
+
+```bash
+source ~/miniconda3/bin/activate
+conda init --all
+```
+
+**Close the terminal and open a new one.** The prompt now starts with
+`(base)`, and `conda --version` prints a version.
+
+Finally, accept Anaconda's Terms of Service for its package channels. Recent
+conda versions require this once; without it, creating the environment in
+step 5 stops with *"Terms of Service have not been accepted"*:
+
+```bash
+conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main
+conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
+```
+
+> **Notes**
+> - `wget: command not found` on a minimal install: `sudo apt install -y wget`.
+> - **ARM computers** (e.g. Raspberry Pi 64-bit; check with `uname -m`, which
+>   prints `aarch64`): use `Miniconda3-latest-Linux-aarch64.sh` in the `wget` line.
+> - The `-b` option installs without questions, which means accepting the
+>   Miniconda license.
+> - Don't want `(base)` active in every terminal?
+>   `conda config --set auto_activate false` (use `conda activate` when needed).
+
+### 2. System packages (Linux only)
 
 The PyQt6 wheel bundles Qt itself, but **not** the X/XCB libraries Qt's platform
 plugin links against. On a fresh or minimal Ubuntu install these are missing and
@@ -69,7 +120,7 @@ sudo apt install -y \
 > xcb-util-image xcb-util-keysyms xcb-util-renderutil libxkbcommon-x11
 > mesa-libEGL mesa-libGL`
 
-### 2. Serial port permissions (Linux, required)
+### 3. Serial port permissions (Linux, required)
 
 On Ubuntu, `/dev/ttyUSB*` and `/dev/ttyACM*` are owned by the `dialout` group and
 a new user is **not** a member. This is the single most common installation
@@ -96,7 +147,7 @@ groups | grep dialout        # must print a line containing "dialout"
 
 For the current terminal only, without logging out: `newgrp dialout`.
 
-### 3. Free the USB adapter from `brltty` (Linux)
+### 4. Free the USB adapter from `brltty` (Linux)
 
 Ubuntu 22.04 and later ship `brltty` (braille display support), which claims
 CH340 and CP210x USB-serial adapters. Symptom: `/dev/ttyUSB0` appears when you
@@ -117,15 +168,23 @@ sudo apt remove -y brltty
 
 Then unplug and replug the adapter.
 
-### 4. Python environment
+### 5. Python environment
 
-Pick **one** of the two options below.
+#### Option A — conda (recommended)
 
-#### Option A — venv (recommended on Ubuntu 24.04, no conda needed)
+With conda from [step 1](#1-install-miniconda-conda), inside the project folder:
 
-Ubuntu 24.04 already has Python 3.12. Note that a plain `pip install` into the
-system Python is blocked by PEP 668 ("externally-managed-environment"), so a
-virtual environment is mandatory:
+```bash
+cd /path/to/Taller5-Terminal
+conda create -n taller5 python=3.12 -y
+conda run -n taller5 pip install -r requirements.txt
+```
+
+#### Option B — venv (without conda)
+
+Ubuntu 24.04 already has Python 3.12, so a plain virtual environment also
+works. A `pip install` into the system Python is blocked by PEP 668
+("externally-managed-environment"), so the virtual environment is mandatory:
 
 ```bash
 sudo apt install -y python3-venv          # not installed by default
@@ -134,20 +193,7 @@ python3 -m venv .venv
 .venv/bin/pip install -r requirements.txt
 ```
 
-#### Option B — conda
-
-```bash
-conda create -n taller5 python=3.12 -y
-conda run -n taller5 pip install -r requirements.txt
-```
-
-### 5. Run
-
-**venv:**
-```bash
-cd /path/to/Taller5-Terminal
-.venv/bin/python main.py
-```
+### 6. Run
 
 **conda:**
 ```bash
@@ -166,6 +212,8 @@ conda run --no-capture-output -n taller5 python main.py
 > `--no-capture-output`, conda buffers stdout/stderr and a startup crash can
 > produce no visible error at all.
 >
+> **venv:** `cd /path/to/Taller5-Terminal`, then `.venv/bin/python main.py`.
+>
 > **Do not set `DISPLAY=:0` manually.** When you run from a desktop terminal the
 > display is already configured correctly — Ubuntu 24.04 defaults to a Wayland
 > session, where forcing `DISPLAY=:0` can point at nothing. Set `DISPLAY`
@@ -175,11 +223,11 @@ The PyQt6 wheel bundles both the `xcb` and `wayland` platform plugins, so X11 an
 Wayland sessions both work. To force one:
 `QT_QPA_PLATFORM=xcb ...` or `QT_QPA_PLATFORM=wayland ...`.
 
-### 6. Verify without hardware
+### 7. Verify without hardware
 
 The toolbar has a **Demo** button that generates a simulated data stream. If Demo
 mode draws text and the chart moves, the GUI half of the install is correct and
-any remaining problem is serial-port related (steps 2 and 3).
+any remaining problem is serial-port related (steps 3 and 4).
 
 ---
 
@@ -189,9 +237,17 @@ Supported and community-tested: the app is started automatically on Windows
 after every change (see the *smoke test* badge in the README), but it is
 developed on Linux.
 
-1. Install [Miniconda](https://docs.conda.io/en/latest/miniconda.html) and open
-   the **Anaconda Prompt** from the Start menu.
-2. Install and run:
+1. **Install Miniconda.** Download
+   [Miniconda3-latest-Windows-x86_64.exe](https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe),
+   run it and keep the default options ("Just Me", default folder).
+2. Open **Anaconda Prompt (miniconda3)** from the Start menu and accept the
+   Terms of Service once (without this, `conda create` stops with
+   *"Terms of Service have not been accepted"*):
+   ```bat
+   conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main
+   conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
+   ```
+3. Install and run, in the same Anaconda Prompt:
    ```bat
    cd path\to\Taller5-Terminal
    conda create -n taller5 python=3.12 -y
@@ -199,7 +255,7 @@ developed on Linux.
    pip install -r requirements.txt
    python main.py
    ```
-3. Ports appear in **PORT** as `COM3`, `COM4`, … No permission setup is needed.
+4. Ports appear in **PORT** as `COM3`, `COM4`, … No permission setup is needed.
 
 **USB driver.** If the board doesn't appear, open **Device Manager**. A device
 under *Other devices* with a yellow warning sign means the driver is missing:
@@ -219,7 +275,30 @@ STM32CubeIDE's terminal, PuTTY, a second copy of this app…
 
 Supported and community-tested, like Windows.
 
+**Install Miniconda** (skip if `conda --version` already works). macOS has
+`curl` instead of `wget`. Use `MacOSX-arm64` on Apple Silicon (M1 and later)
+and `MacOSX-x86_64` on Intel Macs; `uname -m` prints `arm64` or `x86_64`:
+
 ```bash
+mkdir -p ~/miniconda3
+curl https://repo.anaconda.com/miniconda/Miniconda3-latest-MacOSX-arm64.sh -o ~/miniconda3/miniconda.sh
+bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3
+rm ~/miniconda3/miniconda.sh
+source ~/miniconda3/bin/activate
+conda init --all
+```
+
+Close the terminal, open a new one, and accept the Terms of Service once:
+
+```bash
+conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main
+conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
+```
+
+Then install and run:
+
+```bash
+cd /path/to/Taller5-Terminal
 conda create -n taller5 python=3.12 -y
 conda activate taller5
 pip install -r requirements.txt
@@ -266,9 +345,11 @@ cases where the window closes without printing anything to the terminal.
 
 | Symptom | Cause | Fix |
 |---|---|---|
-| `Could not load the Qt platform plugin "xcb"` | Missing system libraries | [Step 1](#1-system-packages-linux-only). Re-run with `QT_DEBUG_PLUGINS=1` to see exactly which `.so` is missing. |
-| Port is listed, but **Connect** fails with `Permission denied` | Not in `dialout` group | [Step 2](#2-serial-port-permissions-linux-required) — and remember to log out/in |
-| `/dev/ttyUSB0` appears then vanishes | `brltty` claimed the adapter | [Step 3](#3-free-the-usb-adapter-from-brltty-linux) |
+| `conda: command not found` | Miniconda not installed, or the terminal was opened before `conda init` | [Step 1](#1-install-miniconda-conda); then **open a new terminal** |
+| `Terms of Service have not been accepted` when creating the environment | Recent conda versions require accepting Anaconda's terms once | Run the two `conda tos accept` commands from [step 1](#1-install-miniconda-conda) |
+| `Could not load the Qt platform plugin "xcb"` | Missing system libraries | [Step 2](#2-system-packages-linux-only). Re-run with `QT_DEBUG_PLUGINS=1` to see exactly which `.so` is missing. |
+| Port is listed, but **Connect** fails with `Permission denied` | Not in `dialout` group | [Step 3](#3-serial-port-permissions-linux-required) — and remember to log out/in |
+| `/dev/ttyUSB0` appears then vanishes | `brltty` claimed the adapter | [Step 4](#4-free-the-usb-adapter-from-brltty-linux) |
 | PORT dropdown is empty (Linux) | Adapter not enumerated, or non-matching name | `ls -l /dev/tty{USB,ACM}*` and `sudo dmesg \| tail`. The app only lists `ttyUSB*`, `ttyACM*`, `ttyAMA*`, `ttyXRUSB*` and `rfcomm*` (`serial_terminal/widgets/toolbar.py`). |
 | PORT shows *(none detected)* (Windows / macOS) | USB driver missing | [Windows](#windows): check Device Manager. [macOS](#macos): install and allow the vendor driver. Then click **↺**. |
 | **Connect** says *No serial port detected* | Nothing is plugged in, or the driver is missing | Plug in the board, click **↺**; see the rows above. |
@@ -276,7 +357,7 @@ cases where the window closes without printing anything to the terminal.
 | Port listed but `Device or resource busy` | Another program holds it (ModemManager, a second terminal, Arduino IDE) | `sudo fuser -v /dev/ttyUSB0` to find it. Persistent ModemManager grabs: `sudo systemctl disable --now ModemManager`. |
 | App exits with no message at all | `conda run` swallowed the traceback | Re-run with `conda run --no-capture-output`, or read the log file above |
 | Chart tab shows "matplotlib is not installed" | Deps installed into a different environment | Re-run the install step, confirm with `python -c "import matplotlib"` inside the same env |
-| `error: externally-managed-environment` from pip | Installing into system Python on Ubuntu 24.04 | Use a venv or conda — [step 4](#4-python-environment). Do **not** use `--break-system-packages`. |
+| `error: externally-managed-environment` from pip | Installing into system Python on Ubuntu 24.04 | Use conda or a venv — [step 5](#5-python-environment). Do **not** use `--break-system-packages`. |
 
 ---
 

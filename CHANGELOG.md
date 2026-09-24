@@ -4,6 +4,14 @@ All notable changes to this project are listed here. Versions follow
 [semantic versioning](https://semver.org/): `1.0.1` fixes bugs, `1.1.0` adds
 features, `2.0.0` changes something in a way that may break existing use.
 
+## [Unreleased]
+
+### Documentation
+- The installation guide now starts by installing Miniconda (`wget` on Linux,
+  `curl` on macOS, the installer on Windows) instead of assuming conda is
+  already there, including the one-time Terms of Service acceptance that
+  recent conda versions require before creating an environment.
+
 ## [1.0.0] - 2026-09-24
 
 First version for the course.

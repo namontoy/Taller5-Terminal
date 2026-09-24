@@ -75,8 +75,29 @@ program holding the port. See the Windows and macOS notes in
 
 ### Quick install
 
-Short version (you need [Miniconda](https://docs.conda.io/en/latest/miniconda.html)
-or Python 3.12):
+**1. Install Miniconda** (first time only; skip if `conda --version` already
+works). On Linux:
+
+```bash
+mkdir -p ~/miniconda3
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh -O ~/miniconda3/miniconda.sh
+bash ~/miniconda3/miniconda.sh -b -u -p ~/miniconda3
+rm ~/miniconda3/miniconda.sh
+source ~/miniconda3/bin/activate
+conda init --all
+```
+
+**Close the terminal and open a new one**, then accept Anaconda's Terms of
+Service once (recent conda versions refuse to create environments until you do):
+
+```bash
+conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main
+conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
+```
+
+Windows and macOS: see [INSTALL.md](INSTALL.md#windows) for their installers.
+
+**2. Get the terminal and run it:**
 
 ```bash
 git clone https://github.com/namontoy/Taller5-Terminal.git
@@ -97,8 +118,8 @@ On **Windows**, run these commands in the *Anaconda Prompt*.
 > Without the second step the port shows up in the list, but **Connect** fails
 > with `Permission denied`.
 
-**[INSTALL.md](INSTALL.md)** has the complete guide: an Ubuntu 24.04 checklist,
-an option without conda (venv), the fix for USB adapters that disappear
+**[INSTALL.md](INSTALL.md)** has the complete guide: installing Miniconda on each
+system, an Ubuntu 24.04 checklist, an option without conda (venv), the fix for USB adapters that disappear
 (`brltty`), and a troubleshooting table.
 
 ### Versions
