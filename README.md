@@ -1,355 +1,312 @@
-# Serial Terminal
+# Taller5 Serial Terminal
 
-A Python serial terminal with real-time hex dump, live chart, and three themes.
-Built with PyQt6, pyserial, and matplotlib.
+**A desktop serial terminal made for learning embedded systems: see every byte your
+microcontroller sends, in text, hex and decimal, and plot its data live without
+writing any extra tools.**
+
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+![Python 3.12](https://img.shields.io/badge/python-3.12-blue.svg)
+![PyQt6](https://img.shields.io/badge/GUI-PyQt6-41cd52.svg)
+![Platform](https://img.shields.io/badge/platform-Linux-lightgrey.svg)
+
+![Terminal view with hex dump, ASCII strip and saved commands](docs/screenshot-terminal.png)
 
 ---
 
-## Quick start
+## Why this terminal?
+
+When you start working with UARTs, the usual tools show you *text*, but what
+travels on the wire is *bytes*. A missing `\r`, a stray `0x00`, a wrong baud
+rate or a sign error in a `printf` are hard to spot when all you see is a line
+of characters.
+
+This terminal is built around a few ideas:
+
+- **Show the bytes, not just the text.** Every received character appears at
+  the same time in the terminal, in a hex dump and in an ASCII strip showing
+  the character, its decimal value and its hex value. Control characters show
+  up by name (`[ESC]`, `[BEL]`…) instead of disappearing.
+- **Tell what you sent apart from what you received.** Your own commands are
+  shown in a different color (amber) everywhere, or can be hidden completely
+  with the **ECHO** switch when the device already echoes them back.
+- **Plot data with zero effort.** Print `T:23.5 V:3.28` from your
+  microcontroller and it appears as a live chart. No Python script, no
+  spreadsheet.
+- **Repeat work without retyping.** 12 saved ASCII commands and 12 saved HEX
+  frames, a directional keypad, and configurable line endings.
+- **Work without hardware.** A **Demo** mode generates realistic sensor data so
+  you can explore the interface (or prepare a class) with no board connected.
+
+---
+
+## Main features
+
+| | |
+|---|---|
+| **Serial connection** | Any baud rate from 300 to 921 600, 5–8 data bits, parity, 1/1.5/2 stop bits, RTS/CTS or XON/XOFF flow control. Automatically detects USB-serial adapters and boards (`ttyUSB*`, `ttyACM*`, …). Currently Linux only; see [Platform support](#platform-support). |
+| **Terminal** | Received text with visible line endings (`↵`) and named control characters; sent commands in amber; auto-scroll you can pause to read. |
+| **Hex dump** | Collapsible panel with offset, hex bytes and ASCII columns, color-coded RX / TX / control bytes. Copy only the hex values with a selection or right-click → *Copy all bytes as hex*. |
+| **ASCII strip** | The most recent characters, each shown as character, decimal and hex. Useful for learning the ASCII table. |
+| **Live chart** | Up to 8 signals, 200-point rolling window, parsed automatically from `key:value`, `key=value` or CSV lines. |
+| **Command sending** | ASCII or HEX mode, selectable line endings (LF, CR, CR+LF, NUL or custom), 12 + 12 saved commands, 8-direction keypad plus START/STOP. |
+| **Local echo switch** | Show or hide your own commands. Turn it off when the device echoes, so lines don't appear twice. |
+| **Capture to file** | Save the buffer as text, or save automatically to a timestamped file every time the app closes. |
+| **Three themes** | *The Matrix* (green on black), *Light* and *Matte*. |
+| **Remembers everything** | Port, speed, theme, saved commands and options are restored on the next launch. |
+
+![Live chart of three signals in demo mode](docs/screenshot-chart.png)
+
+---
+
+## Installation
+
+### Platform support
+
+The terminal is developed and tested on **Linux** (Ubuntu, Linux Mint). The
+interface also starts on Windows and macOS, but the port list currently only
+recognizes Linux device names, so no port can be selected there yet.
+
+### Quick install
+
+Short version (you need [Miniconda](https://docs.conda.io/en/latest/miniconda.html)
+or Python 3.12):
 
 ```bash
-# Create environment and install dependencies (first time only)
-conda create -n taller5 python=3.12 -y
-conda run -n taller5 pip install -r requirements.txt
+git clone https://github.com/namontoy/Taller5-Terminal.git
+cd Taller5-Terminal
 
-# Run
+conda create -n taller5 python=3.12 -y
 conda activate taller5
+pip install -r requirements.txt
+
 python main.py
 ```
 
-On Linux, two extra one-time steps are required before the app can open a port:
-install the Qt XCB system libraries, and add your user to the `dialout` group
-(`sudo usermod -aG dialout $USER`, then log out and back in). Without the second
-one the port still appears in the dropdown but **Connect** fails with
-`Permission denied`.
+> **Linux users:** two one-time steps are required before the terminal can open
+> a port: install the Qt system libraries, and add yourself to the `dialout`
+> group (`sudo usermod -aG dialout $USER`, then **log out and back in**).
+> Without the second step the port shows up in the list, but **Connect** fails
+> with `Permission denied`.
 
-See [INSTALL.md](INSTALL.md) for full installation details, the Ubuntu 24.04
-setup, fonts, and troubleshooting.
+**[INSTALL.md](INSTALL.md)** has the complete guide: an Ubuntu 24.04 checklist,
+an option without conda (venv), the fix for USB adapters that disappear
+(`brltty`), and a troubleshooting table.
 
 ---
 
-## Interface overview
+## Getting started
+
+### 1. Try it without hardware
+
+Click **Demo** in the top bar. The terminal starts receiving lines like
+`T:47.9 V:66.9 H:50.6`. Open the **CHART** tab to watch them plotted, and look at
+the hex dump and ASCII strip to see the same data as bytes. Click **Demo** again
+to stop.
+
+### 2. Connect to your board
+
+1. Plug in the board or USB-serial adapter.
+2. Choose it in **PORT** (click **↺** to rescan if you plugged it in after starting the app).
+3. Set **BAUD** to the same value as your firmware (for example `115200`).
+   Most boards use `8`, `none`, `1` (8N1), which is the default.
+4. Click **Connect**. The dot turns on, the button turns red and reads
+   **Disconnect**, and the status bar shows `CONNECTED`.
+
+If you see unreadable characters, the baud rate almost always doesn't match.
+
+### 3. Send commands
+
+- Type in **COMMAND** and press **Enter** (or click **Send**).
+- Choose the line ending in **END OF COMMAND**. It must match what your firmware
+  expects. `CR+LF` is the default; many parsers only need `LF` or `CR`.
+- Switch to **HEX** to send raw bytes: type `AA 55 01` and exactly those three
+  bytes are sent (plus the selected line ending).
+
+### 4. Save the commands you use often
+
+In **SAVED COMMANDS**, type into any of the 12 slots (ASCII or HEX tab). It's
+saved automatically. Click **↵** next to a slot to send it. The panel scrolls
+when the slots don't fit.
+
+### 5. Echo on or off?
+
+With **ECHO** checked (default), everything you send also appears in amber. If
+your firmware already sends each command back, you'll see it twice; uncheck
+**ECHO** and only what the device sends is shown.
+
+---
+
+## Plotting data from your microcontroller
+
+The chart reads every complete line (ending in `\n`) and extracts the numbers
+from it. Lines without numbers are ignored, so you can freely mix data with
+messages like `System ready`.
+
+| Your line | Signals plotted |
+|---|---|
+| `T:23.5 V:3.28 H:61.4` | `T`, `V`, `H` (recommended: self-describing) |
+| `rpm=1500 duty=42` | `rpm`, `duty` |
+| `23.5,3.28,61.4` | `0`, `1`, `2` (by column) |
+| `23.5;3.28` or `23.5 3.28` | `0`, `1` |
+| `T:23.5 status=OK count:42` | `T`, `count` (non-numeric `status` is skipped) |
+
+Numbers can be integers, decimals or scientific (`-0.7`, `1.5e-3`). Names are
+case-sensitive (`Temp` ≠ `temp`). At most 8 signals; each keeps its last 200
+points.
+
+**STM32 (HAL)**
+
+```c
+char msg[48];
+int n = snprintf(msg, sizeof msg, "T:%d ADC:%lu\r\n", temp_c, adc_value);
+HAL_UART_Transmit(&huart2, (uint8_t *)msg, n, HAL_MAX_DELAY);
+```
+
+> With `newlib-nano`, `%f` prints nothing unless you enable float support
+> (linker flag `-u _printf_float`, or the option in STM32CubeIDE). Sending
+> integers, or scaled values such as millivolts, avoids the issue.
+
+**Arduino**
+
+```cpp
+Serial.print("T:");  Serial.print(temperature, 1);
+Serial.print(" V:"); Serial.println(voltage, 2);    // → T:23.5 V:3.28
+```
+
+**MicroPython**
+
+```python
+print(f"T:{temperature:.1f} V:{voltage:.2f}")
+```
+
+---
+
+## Interface reference
 
 ```
-┌─────────────────────────────────────────────────────────────────────────┐
-│  TOOLBAR   PORT ▾  BAUD ▾  DATA ▾  PARITY ▾  STOP ▾  FLOW ▾  [Connect] │
-├─────────────────────────────────────────────────────────────────────────┤
-│  STATUS    OFFLINE │ rx 0 B │ tx 0 B │ /dev/ttyUSB0 │ 9,600 baud │ 8N1 │
-├──────────────────────────────────────────────────┬──────────┬───────────┤
-│  TERMINAL / CHART  (tab)                         │  HEX     │  SIDEBAR  │
-│                                                  │  DUMP    │           │
-│                                                  │          │           │
-├──────────────────────────────────────────────────┤  (<</>>) │           │
-│  ASCII STRIP                                     │          │           │
-├──────────────────────────────────────────────────┤          │           │
-│  BOTTOM BAR   ✕  ⬇  buf 10k  file capture.txt  [Save] □auto│           │
-└──────────────────────────────────────────────────┴──────────┴───────────┘
+┌───────────────────────────────────────────────────────────────────────────────┐
+│ PORT  BAUD  DATA  PARITY  STOP  FLOW  ECHO □          Demo  About  ● Connect  │  toolbar
+│ OFFLINE │ rx 0 B │ tx 0 B │ /dev/ttyUSB0 │ 115,200 baud │ 8N1 │ term 0x0D 0x0A │  status bar
+├─────────────────────────────────────────────┬──────────────┬──────────────────┤
+│ TERMINAL | CHART                            │  HEX DUMP    │ COMMAND          │
+│                                             │  (<< / >>)   │ END OF COMMAND   │
+│                                             │              │ SAVED COMMANDS   │
+├─────────────────────────────────────────────┤              │ KEYPAD           │
+│ ASCII strip: char / dec / hex               │              │ THEME            │
+├─────────────────────────────────────────────┤              │                  │
+│ ✕  ⬇  buf 10k  file capture.txt  [Save]  □ auto                              │  bottom bar
+└─────────────────────────────────────────────┴──────────────┴──────────────────┘
 ```
 
 ### Toolbar
 
-| Control | Description |
-|---------|-------------|
-| **PORT ▾** | Dropdown of detected serial ports. Only `ttyUSB*`, `ttyACM*`, `ttyAMA*`, and `rfcomm*` devices appear — virtual terminals and legacy `ttyS*` ports are excluded. Click **↺** to rescan without restarting the app. |
-| **BAUD ▾** | Standard baud rates from 300 to 921 600. |
-| **DATA ▾** | Data bits: 5, 6, 7, or 8. |
-| **PARITY ▾** | None, Even, Odd, Mark, Space. |
-| **STOP ▾** | Stop bits: 1, 1.5, or 2. |
-| **FLOW ▾** | None, RTS/CTS, XON/XOFF. |
-| **Demo** | Starts a simulated data stream (sensor readings) without requiring hardware. Useful for testing the UI and chart. |
-| **Connect / Disconnect** | Opens or closes the serial port. All port settings are locked while connected. |
-
-All settings are saved automatically and restored on the next launch.
-
----
+| Control | What it does |
+|---|---|
+| **PORT** / **↺** | Detected serial ports (`ttyUSB*`, `ttyACM*`, `ttyAMA*`, `ttyXRUSB*`, `rfcomm*`). ↺ rescans. |
+| **BAUD, DATA, PARITY, STOP, FLOW** | Frame settings. Locked while connected. |
+| **ECHO** | Show sent commands in the terminal, hex dump, ASCII strip and saved files. Can be changed at any time. |
+| **Demo** | Simulated sensor stream (`T`, `V`, `H` sine waves with noise). Not available while connected. |
+| **About** | Version information. |
+| **Connect / Disconnect** | Open or close the port. |
 
 ### Status bar
 
-```
-CONNECTED │ rx 1,024 B │ tx 48 B │ /dev/ttyUSB0 │ 9,600 baud │ 8N1 │ term CR+LF │
-```
+Connection state · bytes received (`rx`) · bytes sent (`tx`) · port · baud ·
+frame format (e.g. `8N1`) · active line endings (`term`) · `[DEMO]` while demo
+mode runs.
 
-| Field | Meaning |
-|-------|---------|
-| OFFLINE / CONNECTED | Current connection state. |
-| rx N B | Total bytes received since last clear. |
-| tx N B | Total bytes transmitted since last clear. |
-| Port | Active serial port path. |
-| Baud | Active baud rate. |
-| 8N1 | Frame format: data bits + parity initial + stop bits. |
-| term … | Active end-of-command terminators. |
-| [DEMO] | Shown in amber when demo mode is running. |
+### Terminal
 
----
+| Look | Meaning |
+|---|---|
+| Normal color | Received bytes |
+| Amber | Bytes you sent (local echo) |
+| Dim amber `[NAME]` | Control characters, e.g. `[ESC]`, `[BEL]` |
+| Dim `↵` | End of line |
 
-### Terminal view
+Click **⬇** in the bottom bar to pause auto-scroll and read calmly while data keeps
+arriving. Click it again, or drag the scrollbar back to the bottom, to resume.
 
-The main area shows the incoming byte stream as text.
+### Hex dump
 
-| Color | Meaning |
-|-------|---------|
-| Main foreground | Normal received bytes. |
-| Amber | Bytes you sent (echoed back). |
-| Amber, smaller | Control characters displayed as `[NAME]` — e.g. `[BEL]`, `[ESC]`. |
-| Dim ↵ | Line-feed marker at the end of each line. |
-
-The buffer holds the last **N** lines (configurable: 1 k / 5 k / 10 k / 50 k via the bottom bar).
-When the limit is reached the oldest lines are discarded automatically.
-
-**Auto-scroll** follows new data as it arrives.
-Click **⬇** in the bottom bar to freeze the view in place — new data keeps arriving but the viewport stays still.
-Dragging the scrollbar all the way to the bottom re-enables auto-scroll automatically.
-
----
-
-### Chart panel
-
-Click the **CHART** tab to switch from the terminal view to the live plot.
-Data continues to accumulate in the background even when the terminal tab is active —
-switching to the terminal tab and back will not lose any points.
-
-The chart parser reads each complete line (terminated by LF) and tries to extract numeric values.
-Lines that contain no numbers are silently ignored, so it is safe to mix data lines with
-plain-text status messages in the same stream.
-
-#### Signal limits
-
-| Parameter | Value | Notes |
-|-----------|-------|-------|
-| Maximum signals (series) | **8** | Signals beyond the 8th are silently ignored |
-| Points per signal | **200** | Rolling window — oldest point drops when a new one arrives |
-| Supported number formats | integer, float, scientific | `42`, `3.14`, `1.5e-3`, `-0.7` |
-
-Each signal gets a unique color from a fixed palette (green, orange, blue, red, purple, cyan, orange-red, yellow-green).
-The legend is updated automatically every time a new signal name appears.
-
-#### Supported line formats
-
-The parser tries key:value / key=value first. If no named pairs are found it falls back to
-positional parsing (comma, semicolon, or whitespace as delimiter).
-
-| Format | Example line | Resulting signal names |
-|--------|-------------|------------------------|
-| Key `:` value | `temp:23.5 hum:65 press:1013` | `temp`, `hum`, `press` |
-| Key `=` value | `val1=1.2 val2=3.4` | `val1`, `val2` |
-| Comma-separated | `1.23, 4.56, 7.89` | `0`, `1`, `2` |
-| Semicolon-separated | `1.23; 4.56` | `0`, `1` |
-| Space / tab separated | `23.5  65.2  1013.0` | `0`, `1`, `2` |
-| Mixed (named + text) | `T:23.5 status=OK count:42` | `T`, `count` (`status` skipped — not numeric) |
-
-#### Signal naming rules
-
-- Names come from the key in `key:value` or `key=value` pairs.
-- Names must start with a letter or underscore and can contain letters, digits, and underscores — e.g. `rpm`, `axis_x`, `ch1`.
-- When using positional format (CSV / semicolons / spaces), signals are named `0`, `1`, `2`, … in column order.
-- The signal name is fixed the first time it appears. If later lines send a different number of columns the extra columns are added as new signals (up to the 8-signal limit).
-- Signal names are **case-sensitive**: `Temp` and `temp` are two different signals.
-
-#### Mixing named and positional signals
-
-You can freely mix formats across different lines. Each line is parsed independently.
-However, mixing named and positional formats in the **same stream** is not recommended
-because positional signals named `0`, `1`, … may collide with key names.
-
-#### Arduino / microcontroller examples
-
-**Named pairs (recommended — self-documenting in the terminal view too):**
-
-```cpp
-// Arduino — one line per sample
-Serial.print("T:");    Serial.print(temperature, 1);
-Serial.print(" V:");   Serial.print(voltage, 2);
-Serial.print(" H:");   Serial.println(humidity, 1);
-// → T:23.5 V:3.28 H:61.4
-```
-
-**CSV (compact, good for high data rates):**
-
-```cpp
-// Arduino — comma-separated, no labels
-Serial.print(temperature, 1);  Serial.print(',');
-Serial.print(voltage, 2);      Serial.print(',');
-Serial.println(humidity, 1);
-// → 23.5,3.28,61.4   (series named 0, 1, 2)
-```
-
-**MicroPython:**
-
-```python
-import sys
-print(f"T:{temperature:.1f} V:{voltage:.2f} H:{humidity:.1f}")
-```
-
-#### Demo mode signals
-
-When **Demo** mode is active the app generates three synthetic signals
-so the chart can be tested without hardware:
-
-| Signal | Centre | Amplitude | Period | Noise | Description |
-|--------|--------|-----------|--------|-------|-------------|
-| `T` | 40 | ±8 | ~2 min | ±0.4 | Slow temperature-like drift |
-| `V` | 60 | ±12 | ~8 s | ±2.0 | Fast voltage-like oscillation |
-| `H` | 50 | ±15 | ~30 s | ±1.2 | Medium humidity-like wave |
-
-All three are sine waves with different periods and a small amount of random noise,
-centred approximately 10–20 units apart so all lines are visible on the same Y axis.
-
----
-
-### ASCII strip
-
-A compact horizontal strip below the terminal showing the most recent characters.
-Each column displays the character, its decimal value, and its hex value.
-The strip is updated continuously as data arrives.
-
----
-
-### Hex dump panel
-
-The collapsible panel on the right side of the terminal.
-Click **>>** / **<<** to expand or collapse it with a smooth animation.
-
-Each row shows:
-- **Offset** (in hex) of the first byte in that row
-- **8 hex bytes** — color-coded: green = normal, amber = sent, dim = control/NUL
-- **ASCII representation** — printable characters shown, non-printable shown as `·`
-
-The legend in the panel header explains the three colors:
-- **● RX** — bytes received from the device
-- **● TX** — bytes you sent (echoed)
-- **● OFF** — row offset values
-
----
+Click **>>** / **<<** to open or close it. Each row shows the offset, 8 bytes in
+hex and their ASCII form (`·` for non-printable bytes). Colors: **RX** received,
+**TX** sent, **OFF** offsets; control bytes are highlighted. Selecting and
+copying (Ctrl+C) copies only the hex values; right-click → **Copy all bytes as
+hex** copies the whole buffer as `48 65 6C 6C 6F …`.
 
 ### Sidebar
 
-#### Command
-
-Type a command and press **Enter** or click **Send**.
-Toggle **HEX** mode to send raw hex bytes:
-- ASCII mode: `hello` → sends `68 65 6C 6C 6F`
-- HEX mode: `68 65 6C 6C 6F` → sends those exact bytes
-
-The **Send** button is disabled when not connected and when the input field is empty.
-
-#### End of command (terminator)
-
-Select which byte(s) are appended to every outgoing command.
-
-| Button | Bytes sent |
-|--------|-----------|
-| LF `0x0A` | Line feed only |
-| CR `0x0D` | Carriage return only |
-| CR+LF `0x0D 0x0A` | Carriage return + line feed (most common) |
-| NUL `0x00` | Null byte |
-
-You can also define a **custom terminator** by clicking **+ add** and entering a single character or a hex code like `0x03`.
-Click the chip again (it turns into a remove button) to delete a custom terminator.
-Active terminators appear in the status bar under **term**.
-
-Multiple terminators can be active at the same time.
-
-#### Saved commands (presets)
-
-Six numbered slots for frequently-used commands.
-Type into a slot's text field to save a command, then click its number button to send it instantly.
-Presets are saved to disk and restored on the next launch.
-
-#### Keypad
-
-A 3×3 directional pad for sending movement or navigation commands.
-The center button toggles **START** / **STOP** (sends the configured command string for each).
-
-#### Theme
-
-Switch between three visual themes:
-
-| Theme | Description |
-|-------|-------------|
-| **The Matrix** | Very dark background with phosphor-green text. High-contrast, easy on the eyes in the dark. |
-| **Light** | Off-white background with dark text. Good for bright environments. |
-| **Matte** | Dark warm-brown background with parchment-tinted text. |
-
-The selected theme is persisted and applied at startup.
-
----
+| Section | What it does |
+|---|---|
+| **Command** | Type and send. ASCII mode sends the text; HEX mode sends bytes and formats your input as you type (`aa5501` → `AA 55 01`). |
+| **End of command** | Bytes appended to every command: `LF 0x0A`, `CR 0x0D`, `CR+LF`, `NUL 0x00`. Several can be active. **+ Add** creates a custom one (a character such as `@`, or a code such as `0x03`); **×** removes it. |
+| **Saved commands** | 12 ASCII + 12 HEX slots, saved automatically. **↵** sends a slot. Enabled only while connected. |
+| **Keypad** | Arrows send `DIR:N`, `DIR:NE`, `DIR:E`, … `DIR:NW`; the center button alternates `START` / `STOP`. The selected line ending is appended. Handy for robots, CNC and motor labs. |
+| **Theme** | *The Matrix*, *Light* or *Matte*. |
 
 ### Bottom bar
 
-| Control | Description |
-|---------|-------------|
-| **✕** | Clears the terminal buffer, the chart data, the hex dump, and resets the rx/tx counters. |
-| **⬇ / ⏸** | Toggle auto-scroll. ⬇ = following new data. ⏸ = viewport frozen. |
-| **buf N k** | Buffer size selector: 1 k / 5 k / 10 k / 50 k characters. |
-| **filename** | Base name used for manual and auto saves. |
-| **Save** | Saves the current buffer to the file named in the field. |
-| **auto** | When checked, saves the buffer automatically to a **timestamped file** when the application is closed. The filename uses the pattern `<base>_DDMMYY_HHMMSS.txt` — for example, `capture_300526_143022.txt`. Each close creates a new file; nothing is ever overwritten. |
+| Control | What it does |
+|---|---|
+| **✕** | Clear terminal, chart, hex dump, ASCII strip and the rx/tx counters. |
+| **⬇** | Pause / resume auto-scroll. |
+| **buf** | How many characters to keep: 1k, 5k, 10k or 50k. Older data is discarded. |
+| **file** + **Save** | Write the current buffer as text to that file name, in the folder the app was started from. An existing file with that name is overwritten. |
+| **auto** | On close, save the buffer to a new timestamped file, e.g. `capture_230926_143022.txt`. Never overwrites. |
 
 ---
 
-## Configuration
+## Where things are stored
 
-Settings are saved automatically to:
-
-```
-~/.config/serial_terminal/config.json
-```
-
-The file is updated every time a setting changes (port, baud, theme, presets, etc.).
-Deleting the file resets everything to defaults.
-
-| Config key | Default | Description |
-|-----------|---------|-------------|
-| `port` | `/dev/ttyUSB0` | Last selected serial port |
-| `baud` | `9600` | Baud rate |
-| `data_bits` | `8` | Data bits |
-| `parity` | `none` | Parity |
-| `stop_bits` | `1` | Stop bits |
-| `flow` | `none` | Flow control |
-| `theme` | `matrix` | Active theme |
-| `font_size` | `13` | Terminal font size (pt) |
-| `buf_size` | `10000` | Terminal buffer size (characters) |
-| `save_filename` | `capture.txt` | Base filename for saves |
-| `active_terms` | `['0x0D 0x0A']` | Active end-of-command terminators |
-| `presets` | `['', …]` | Six saved command presets |
-| `custom_terms` | `[]` | User-defined custom terminators |
+| What | Location |
+|---|---|
+| Settings (port, theme, saved commands…) | `~/.config/serial_terminal/config.json`. Delete it to reset everything. |
+| Application log | `~/.config/serial_terminal/logs/serial_terminal.log`. **Check it first if something goes wrong.** |
+| Captures | The folder you started the app from. |
 
 ---
 
-## Dependencies
+## How it's built
 
-| Package | Version | Purpose |
-|---------|---------|---------|
-| Python | 3.12 | Runtime |
-| PyQt6 | ≥ 6.6 | GUI framework |
-| pyserial | ≥ 3.5 | Serial port I/O |
-| matplotlib | ≥ 3.8 | Real-time chart |
+A small, readable PyQt6 application, suitable as an example of a real desktop
+tool:
 
-All dependencies are installed inside the `taller5` conda environment and do not affect the system Python.
-
----
-
-## Project structure
+- **Serial I/O runs in a separate thread** (`QThread` + pyserial), so the
+  interface never freezes while waiting for data.
+- **Rendering is throttled**: the terminal, hex dump, ASCII strip and chart
+  each redraw at a fixed rate (50–250 ms), not on every byte. This kept the app
+  running for more than 15 hours on a continuous stream at 4 lines/s without
+  slowing down.
+- **Crash safety**: unhandled errors are logged instead of silently closing the
+  app.
 
 ```
 Taller5-Terminal/
-├── main.py                        Entry point
-├── requirements.txt               Python dependencies
-├── README.md                      This file
-├── INSTALL.md                     Step-by-step installation guide
+├── main.py                    Entry point
+├── requirements.txt           PyQt6, pyserial, matplotlib
+├── INSTALL.md                 Installation guide and troubleshooting
+├── docs/                      Screenshots
 └── serial_terminal/
-    ├── __init__.py                Char dataclass (code, ts, sent)
-    ├── themes.py                  OKLCH color palettes + QSS generator
-    ├── config.py                  JSON config load / save
-    ├── serial_worker.py           QThread-based serial I/O (pyserial)
-    ├── main_window.py             Main window, signal wiring, demo mode
+    ├── main_window.py         Main window, wiring between widgets, demo mode
+    ├── serial_worker.py       Serial port thread
+    ├── config.py              Settings load/save
+    ├── themes.py              Color themes and stylesheet
+    ├── logging_setup.py       Log file and error handlers
     └── widgets/
-        ├── toolbar.py             Port selector, baud, frame settings
-        ├── status_bar.py          Live stats row
-        ├── terminal_view.py       Scrolling char stream (QTextEdit)
-        ├── ascii_strip.py         Last-chars strip (custom QPainter)
-        ├── hex_panel.py           Collapsible hex dump (custom QPainter)
-        ├── chart_panel.py         Real-time matplotlib chart
-        ├── bottom_bar.py          Clear / scroll / buffer / save controls
-        └── sidebar.py             Command input, presets, keypad, theme
+        ├── toolbar.py         Port settings, ECHO, Connect
+        ├── status_bar.py      Connection statistics
+        ├── terminal_view.py   Text terminal
+        ├── hex_panel.py       Hex dump
+        ├── ascii_strip.py     char / dec / hex strip
+        ├── chart_panel.py     Live chart (matplotlib)
+        ├── sidebar.py         Commands, line endings, saved commands, keypad, theme
+        └── bottom_bar.py      Clear, scroll, buffer, save
 ```
+
+---
+
+## License
+
+[MIT](LICENSE) © 2026 Nerio Andrés Montoya G. Free to use, modify and share in
+your courses and projects.
