@@ -7,6 +7,7 @@ conversion inline.
 """
 from __future__ import annotations
 
+import re
 from collections.abc import Iterable
 
 from serial_terminal import Char
@@ -16,14 +17,19 @@ from serial_terminal.themes import BUILT_IN_TERMS
 _log = get_logger('protocol')
 
 _HEX_DIGITS = '0123456789ABCDEF'
+# A C-style '0x' prefix: at the start of a token, i.e. not preceded by a
+# hex digit (so the '0' in 'A0' or '10' is never taken for a prefix).
+_HEX_PREFIX_RE = re.compile(r'(?<![0-9A-Fa-f])0[xX]')
 
 
 def format_hex_input(text: str) -> str:
     """Normalise what the user types in a HEX field: 'aa5501' -> 'AA 55 01'.
 
-    Non-hex characters are dropped and digits are grouped in pairs; an odd
-    trailing digit stays on its own ('AAB' -> 'AA B').
+    C-style prefixes are accepted ('0xAA 0x55' -> 'AA 55'). Other non-hex
+    characters are dropped and digits are grouped in pairs; an odd trailing
+    digit stays on its own ('AAB' -> 'AA B').
     """
+    text = _HEX_PREFIX_RE.sub(' ', text)
     raw = ''.join(ch for ch in text.upper() if ch in _HEX_DIGITS)
     return ' '.join(raw[i:i + 2] for i in range(0, len(raw), 2))
 

@@ -128,8 +128,8 @@ If you see unreadable characters, the baud rate almost always doesn't match.
 - Type in **COMMAND** and press **Enter** (or click **Send**).
 - Choose the line ending in **END OF COMMAND**. It must match what your firmware
   expects. `CR+LF` is the default; many parsers only need `LF` or `CR`.
-- Switch to **HEX** to send raw bytes: type `AA 55 01` and exactly those three
-  bytes are sent (plus the selected line ending).
+- Switch to **HEX** to send raw bytes: type `AA 55 01` (or C-style `0xAA 0x55 0x01`)
+  and exactly those three bytes are sent (plus the selected line ending).
 
 ### 4. Save the commands you use often
 
@@ -248,7 +248,7 @@ hex** copies the whole buffer as `48 65 6C 6C 6F …`.
 
 | Section | What it does |
 |---|---|
-| **Command** | Type and send. ASCII mode sends the text; HEX mode sends bytes and formats your input as you type (`aa5501` → `AA 55 01`). |
+| **Command** | Type and send. ASCII mode sends the text; HEX mode sends bytes and formats your input as you type (`aa5501` → `AA 55 01`); C-style `0xAA 0x55` is accepted too. |
 | **End of command** | Bytes appended to every command: `LF 0x0A`, `CR 0x0D`, `CR+LF`, `NUL 0x00`. Several can be active. **+ Add** creates a custom one (a character such as `@`, or a code such as `0x03`); **×** removes it. |
 | **Saved commands** | 12 ASCII + 12 HEX slots, saved automatically. **↵** sends a slot. Enabled only while connected. |
 | **Keypad** | Arrows send `DIR:N`, `DIR:NE`, `DIR:E`, … `DIR:NW`; the center button alternates `START` / `STOP`. The selected line ending is appended. Handy for robots, CNC and motor labs. |

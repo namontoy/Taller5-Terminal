@@ -32,6 +32,20 @@ class FormatHexInputTest(unittest.TestCase):
     def test_empty(self):
         self.assertEqual(format_hex_input(''), '')
 
+    def test_c_style_0x_prefixes_are_accepted(self):
+        self.assertEqual(format_hex_input('0xAA'), 'AA')
+        self.assertEqual(format_hex_input('0xAA 0x55 0x01'), 'AA 55 01')
+        self.assertEqual(format_hex_input('0XAA,0x0d'), 'AA 0D')
+
+    def test_typing_0x_clears_it(self):
+        # The field is reformatted on every keystroke: '0' then '0x'
+        self.assertEqual(format_hex_input('0'), '0')
+        self.assertEqual(format_hex_input('0x'), '')
+
+    def test_zero_bytes_are_not_mistaken_for_prefixes(self):
+        self.assertEqual(format_hex_input('00 10 A0'), '00 10 A0')
+        self.assertEqual(format_hex_input('A0x5'), 'A0 5')   # mid-token x
+
 
 class TerminatorBytesTest(unittest.TestCase):
 
