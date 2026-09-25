@@ -129,7 +129,7 @@ Each version used in the course is tagged and listed on the
 what changed is in [CHANGELOG.md](CHANGELOG.md). To install a specific version:
 
 ```bash
-git clone --branch v1.0.0 https://github.com/namontoy/Taller5-Terminal.git
+git clone --branch v1.0.1 https://github.com/namontoy/Taller5-Terminal.git
 ```
 
 The version you are running is shown in **About**.
